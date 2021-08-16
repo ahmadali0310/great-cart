@@ -1,0 +1,75 @@
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+
+# Create your models here.
+
+class MyAccountManager(BaseUserManager):
+
+    def create_user(self, first_name, last_name, email, username, password=None):
+        if not email:
+            raise ValueError("Please provide email.")
+        
+        if not username:
+            raise ValueError("Please provide username.")
+        
+        user = self.model(
+            first_name = first_name,
+            last_name = last_name,
+            email = email,
+            username = username
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+
+        return user
+
+    
+
+    def create_superuser(self, first_name, last_name, email, username, password):
+
+        user = self.create_user(
+            first_name = first_name,
+            last_name = last_name,
+            email = email,
+            password = password,
+            username = username
+        )
+
+        user.is_active = True
+        user.is_staff = True
+        user.is_admin = True
+        user.is_superadmin = True
+
+        user.save(using=self._db)
+
+        return user
+
+
+
+class Account(AbstractBaseUser):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(max_length=100, unique=True)
+    username = models.CharField(max_length=20, unique=True)
+
+    # * Required Fields
+
+    date_joined = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=False)
+    is_admin = models.BooleanField(default=False)
+    is_superadmin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["first_name", "last_name", "username"]
+
+    objects = MyAccountManager()
+
+    def has_perm(self, perms, obj=None):
+        return self.is_admin
+    
+
+    def has_module_perms(self, add_label):
+        return True
